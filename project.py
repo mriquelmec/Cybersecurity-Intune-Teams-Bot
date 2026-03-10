@@ -112,6 +112,8 @@ def send_teams_message(token, target_id, message_body):
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
     
     # 1. Create a chat between the App and the User
+    # In Application context, we only need to specify the members. 
+    # Microsoft Graph expects the target user's ID.
     chat_payload = {
         "chatType": "oneOnOne",
         "members": [
@@ -119,15 +121,12 @@ def send_teams_message(token, target_id, message_body):
                 "@odata.type": "#microsoft.graph.aadUserConversationMember",
                 "roles": ["owner"],
                 "user@odata.bind": f"{GRAPH_URL}/users('{target_id}')"
-            },
-            {
-                "@odata.type": "#microsoft.graph.aadUserConversationMember",
-                "roles": ["owner"],
-                "user@odata.bind": f"{GRAPH_URL}/users('{CLIENT_ID}')"
             }
         ]
     }
     
+    # Note: For bots to start chats, the bot identity is inherited from the App Token.
+    # If this fails with 403 Forbidden, the user MUST have the app installed via Setup Policy.
     chat_res = requests.post(f"{GRAPH_URL}/chats", headers=headers, json=chat_payload)
     
     if chat_res.status_code in [200, 201]:
@@ -136,7 +135,7 @@ def send_teams_message(token, target_id, message_body):
         send_res = requests.post(f"{GRAPH_URL}/chats/{chat_id}/messages", headers=headers, json=msg_payload)
         return send_res.status_code == 201
     
-    print(f"   [ERROR] Could not initiate chat. (User might need to install the app first): {chat_res.text}")
+    print(f"   [ERROR] Teams API Error: {chat_res.status_code} - {chat_res.text}")
     return False
 
 def main():
