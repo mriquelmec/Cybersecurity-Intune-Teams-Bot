@@ -1,0 +1,39 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "e0d6c10d-2780-4545-973e-327c59c5d070",
+  "packageName": "com.cybersecurity.compliancebot",
+  "developer": {
+    "name": "Cybersecurity Team",
+    "websiteUrl": "https://essbio.cl",
+    "privacyUrl": "https://essbio.cl/privacy",
+    "termsOfUseUrl": "https://essbio.cl/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Compliance Bot",
+    "full": "Cybersecurity Compliance Notification Bot"
+  },
+  "description": {
+    "short": "Notifica sobre cumplimiento de dispositivos.",
+    "full": "Este bot notifica a los usuarios cuando sus dispositivos no cumplen con las políticas de Intune y activa sincronismos remotos."
+  },
+  "accentColor": "#004B87",
+  "bots": [
+    {
+      "botId": "6353d43d-af21-4948-98e2-82255091d66a",
+      "scopes": ["personal"],
+      "supportsFiles": false,
+      "isNotificationOnly": true
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": []
+}

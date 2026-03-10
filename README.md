@@ -1,55 +1,68 @@
-# Cybersecurity Compliance Bot for Teams & Intune
+# 🛡️ Cybersecurity bot for Microsoft Intune & Teams
+[![Intune Compliance Bot](https://github.com/mriquelmec/Cybersecurity-Intune-Teams-Bot/actions/workflows/compliance.yml/badge.svg)](https://github.com/mriquelmec/Cybersecurity-Intune-Teams-Bot/actions/workflows/compliance.yml)
 
-This project automates the notification of non-compliant devices in Microsoft Intune via Microsoft Teams. It identifies devices that do not meet security policies, triggers a remote sync, and sends a personalized message to the device owner.
+## Resumen del proyecto 
 
-## Features
+Este proyecto es una solución de ciberseguridad automatizada diseñada para organizaciones que utilizan **Microsoft Intune**. El bot identifica dispositivos que no cumplen con las políticas de cumplimiento (*Non-Compliant*), activa un **Sincronismo Remoto** para forzar la actualización de políticas y notifica proactivamente al usuario a través de un mensaje de **Microsoft Teams**.
 
-- **Intune Compliance Check**: Fetches a list of non-compliant devices using Microsoft Graph API.
-- **Remote Sync**: Automatically triggers a remote sync action on non-compliant devices.
-- **Teams Notifications**: Sends 1-on-1 Teams messages to users with non-compliant devices.
-- **Group Filtering**: Optional filtering to only process users within a specific Entra ID (Azure AD) group.
+### 🔄 Evolución: De script local a cloud automation
+Originalmente, este proyecto nació como un script interactivo que requería autenticación manual del administrador (Device Code Flow). Para llevarlo a un entorno de **Producción Corporativa**, evolucionando eventualmente a una solución **Serverless** utilizando **GitHub Actions**.
 
-## Prerequisites
+*   **Sin Costo:** Corre 100% gratis en la infraestructura de GitHub.
+*   **Sin Servidores:** No requiere una PC encendida; se ejecuta automáticamente cada 72 horas.
+*   **Seguridad:** Utiliza Application Permissions (Client Secret) y secretos encriptados de GitHub.
 
-- Python 3.x
-- An Entra ID (Azure AD) App Registration with the following Delegated permissions:
-  - `User.Read`
-  - `User.ReadBasic.All`
-  - `GroupMember.Read.All`
-  - `DeviceManagementManagedDevices.ReadWrite.All`
-  - `Chat.Create`
-  - `Chat.ReadWrite`
+---
 
-## Installation
+## Project overview 
 
-1. Clone the repository.
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Create a `.env` file in the root directory with the following variables:
-   ```env
-   TENANT_ID=your_tenant_id
-   CLIENT_ID=your_client_id
-   TEST_GROUP_ID=your_test_group_id (optional)
-   ```
+This project is an automated cybersecurity solution for organizations using **Microsoft Intune**. The bot scans for devices that are **Non-Compliant** with corporate security policies, triggers a **Remote Sync** to force policy updates, and proactively notifies the user via a **Microsoft Teams** message.
 
-## Usage
+### 🔄 Evolution: from local script to cloud automation
+Initially, this project started as an interactive script requiring manual administrator login (Device Code Flow). To reach **Enterprise Production** standards, it was evolved into a **Serverless** solution using **GitHub Actions**.
 
-Run the main script:
-```bash
-python project.py
-```
+*   **Zero Cost:** Runs 100% free on GitHub’s infrastructure.
+*   **Serverless:** No need for an always-on PC; it executes automatically every 72 hours.
+*   **Security:** Implements Application Permissions (Client Secret) and GitHub Encrypted Secrets.
 
-Follow the on-screen instructions for Device Code authentication.
+---
 
-## Project Structure
+## 🛠️ Tech stack & architecture
 
-- `project.py`: Main logic for device compliance and notifications.
-- `tests/`: Directory containing diagnostic and test scripts.
-- `.env`: (Ignored) Configuration for sensitive credentials.
+*   **Python 3.10**: Core logic.
+*   **Microsoft Graph API**: Interaction with Intune and Teams.
+*   **MSAL (Microsoft Authentication Library)**: Secure authentication.
+*   **GitHub Actions**: Cron-job scheduling and cloud execution.
+*   **Microsoft Entra ID (Azure AD)**: App Registration with Application Permissions.
 
-## Future Plans
+---
 
-- Transition to a Teams App Bot for automated production use.
-- Integration with Intune App protection policies.
+## 🚀 How to deploy / Cómo desplegar
+
+### 1. Azure configuration (Entra ID)
+1. Register an App in **Microsoft Entra ID**.
+2. Add **Application Permissions** to Microsoft Graph:
+   - `DeviceManagementManagedDevices.ReadWrite.All`
+   - `User.Read.All`
+   - `Chat.Create`
+   - `ChatMessage.Send`
+3. Grant **Admin Consent**.
+4. Create a **Client Secret**.
+
+### 2. GitHub setup
+Go to your repository **Settings > Secrets and variables > Actions** and add:
+- `TENANT_ID`
+- `CLIENT_ID`
+- `CLIENT_SECRET`
+- `TEST_GROUP_ID` (Optional)
+
+---
+
+## 📁 Folder structure
+- `project.py`: Main bot logic.
+- `.github/workflows/compliance.yml`: Automation schedule.
+- `requirements.txt`: Python dependencies.
+- `.gitignore`: Ensures your `.env` and secrets are **never** public.
+
+---
+*Developed for Enterprise Cybersecurity Compliance.*
