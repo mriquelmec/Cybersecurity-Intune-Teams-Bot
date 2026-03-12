@@ -156,14 +156,18 @@ def send_teams_message(token, target_id, message_body):
         if chat_res.status_code in [200, 201]:
             chat_id = chat_res.json().get("id")
         else:
-            # Si falla la creación, es probable que la App no esté instalada para el usuario
+            print(f"   [ERROR] Teams chat creation failed: {chat_res.status_code} - {chat_res.text}")
             return False
 
     # 3. Enviar el mensaje al chat encontrado o creado (v1.0)
     if chat_id:
         msg_payload = {"body": {"contentType": "html", "content": message_body}}
         send_res = requests.post(f"{GRAPH_URL}/chats/{chat_id}/messages", headers=headers, json=msg_payload)
-        return send_res.status_code == 201
+        if send_res.status_code == 201:
+            return True
+        else:
+            print(f"   [ERROR] Teams message send failed: {send_res.status_code} - {send_res.text}")
+            return False
     
     return False
 
