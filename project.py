@@ -108,11 +108,11 @@ def get_group_member_upns(token, group_id):
     return upns
 
 def send_teams_message(token, target_id, message_body):
-    """Sends a message to a user using Application Permissions."""
+    """Sends a message to a user using Application Permissions via BETA endpoint."""
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+    BETA_URL = "https://graph.microsoft.com/beta"
     
-    # 1. Create a chat between the App and the User
-    # In Application context, we MUST specify both the Bot and the User as members.
+    # 1. Create a chat between the App and the User (Requires BETA for AppId member)
     chat_payload = {
         "chatType": "oneOnOne",
         "members": [
@@ -130,12 +130,12 @@ def send_teams_message(token, target_id, message_body):
         ]
     }
     
-    chat_res = requests.post(f"{GRAPH_URL}/chats", headers=headers, json=chat_payload)
+    chat_res = requests.post(f"{BETA_URL}/chats", headers=headers, json=chat_payload)
     
     if chat_res.status_code in [200, 201]:
         chat_id = chat_res.json().get("id")
         msg_payload = {"body": {"contentType": "html", "content": message_body}}
-        send_res = requests.post(f"{GRAPH_URL}/chats/{chat_id}/messages", headers=headers, json=msg_payload)
+        send_res = requests.post(f"{BETA_URL}/chats/{chat_id}/messages", headers=headers, json=msg_payload)
         return send_res.status_code == 201
     
     print(f"   [ERROR] Teams API Error: {chat_res.status_code} - {chat_res.text}")
