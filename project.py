@@ -107,38 +107,64 @@ def get_group_member_upns(token, group_id):
 
     return upns
 
+def find_existing_bot_chat(token, user_id):
+    """Busca el primer chat de tipo oneOnOne del usuario usando v1.0."""
+    headers = {'Authorization': f'Bearer {token}'}
+    # Usamos v1.0 sin expandir miembros para máxima compatibilidad
+    endpoint = f"{GRAPH_URL}/users/{user_id}/chats"
+    
+    try:
+        response = requests.get(endpoint, headers=headers)
+        if response.status_code == 200:
+            chats = response.json().get("value", [])
+            for chat in chats:
+                # Retornamos el primer chat uno-a-uno que encontremos
+                if chat.get("chatType") == "oneOnOne":
+                    return chat.get("id")
+    except Exception as e:
+        print(f"   [DEBUG] Error al buscar chat: {e}")
+        
+    return None
+
 def send_teams_message(token, target_id, message_body):
-    """Sends a message to a user using Application Permissions via BETA endpoint."""
+    """Envía un mensaje buscando primero un chat existente para evitar errores de creación."""
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-    BETA_URL = "https://graph.microsoft.com/beta"
     
-    # 1. Create a chat between the App and the User (Requires BETA for AppId member)
-    chat_payload = {
-        "chatType": "oneOnOne",
-        "members": [
-            {
-                "@odata.type": "#microsoft.graph.aadAppIdConversationMember",
-                "roles": ["owner"],
-                "appId": CLIENT_ID,
-                "tenantId": TENANT_ID
-            },
-            {
-                "@odata.type": "#microsoft.graph.aadUserConversationMember",
-                "roles": ["owner"],
-                "user@odata.bind": f"{GRAPH_URL}/users('{target_id}')"
-            }
-        ]
-    }
+    # 1. Intentar encontrar chat existente (v1.0)
+    chat_id = find_existing_bot_chat(token, target_id)
     
-    chat_res = requests.post(f"{BETA_URL}/chats", headers=headers, json=chat_payload)
-    
-    if chat_res.status_code in [200, 201]:
-        chat_id = chat_res.json().get("id")
+    # 2. Si no existe, intentamos crearlo como último recurso (usando Beta para soporte de appId)
+    if not chat_id:
+        BETA_URL = "https://graph.microsoft.com/beta"
+        chat_payload = {
+            "chatType": "oneOnOne",
+            "members": [
+                {
+                    "@odata.type": "#microsoft.graph.aadAppIdConversationMember",
+                    "roles": ["owner"],
+                    "appId": CLIENT_ID,
+                    "tenantId": TENANT_ID
+                },
+                {
+                    "@odata.type": "#microsoft.graph.aadUserConversationMember",
+                    "roles": ["owner"],
+                    "user@odata.bind": f"{GRAPH_URL}/users('{target_id}')"
+                }
+            ]
+        }
+        chat_res = requests.post(f"{BETA_URL}/chats", headers=headers, json=chat_payload)
+        if chat_res.status_code in [200, 201]:
+            chat_id = chat_res.json().get("id")
+        else:
+            # Si falla la creación, es probable que la App no esté instalada para el usuario
+            return False
+
+    # 3. Enviar el mensaje al chat encontrado o creado (v1.0)
+    if chat_id:
         msg_payload = {"body": {"contentType": "html", "content": message_body}}
-        send_res = requests.post(f"{BETA_URL}/chats/{chat_id}/messages", headers=headers, json=msg_payload)
+        send_res = requests.post(f"{GRAPH_URL}/chats/{chat_id}/messages", headers=headers, json=msg_payload)
         return send_res.status_code == 201
     
-    print(f"   [ERROR] Teams API Error: {chat_res.status_code} - {chat_res.text}")
     return False
 
 def get_compliance_reasons(token, device_id):
