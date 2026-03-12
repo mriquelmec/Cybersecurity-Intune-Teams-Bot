@@ -119,7 +119,8 @@ def send_teams_message(token, target_id, message_body):
             {
                 "@odata.type": "#microsoft.graph.aadAppIdConversationMember",
                 "roles": ["owner"],
-                "appId": CLIENT_ID
+                "appId": CLIENT_ID,
+                "tenantId": TENANT_ID
             },
             {
                 "@odata.type": "#microsoft.graph.aadUserConversationMember",
