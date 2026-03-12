@@ -117,9 +117,9 @@ def send_teams_message(token, target_id, message_body):
         "chatType": "oneOnOne",
         "members": [
             {
-                "@odata.type": "#microsoft.graph.aadUserConversationMember",
+                "@odata.type": "#microsoft.graph.aadAppIdConversationMember",
                 "roles": ["owner"],
-                "user@odata.bind": f"{GRAPH_URL}/users('{CLIENT_ID}')"
+                "appId": CLIENT_ID
             },
             {
                 "@odata.type": "#microsoft.graph.aadUserConversationMember",
