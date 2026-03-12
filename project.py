@@ -112,11 +112,15 @@ def send_teams_message(token, target_id, message_body):
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
     
     # 1. Create a chat between the App and the User
-    # In Application context, we only need to specify the members. 
-    # Microsoft Graph expects the target user's ID.
+    # In Application context, we MUST specify both the Bot and the User as members.
     chat_payload = {
         "chatType": "oneOnOne",
         "members": [
+            {
+                "@odata.type": "#microsoft.graph.aadUserConversationMember",
+                "roles": ["owner"],
+                "user@odata.bind": f"{GRAPH_URL}/users('{CLIENT_ID}')"
+            },
             {
                 "@odata.type": "#microsoft.graph.aadUserConversationMember",
                 "roles": ["owner"],
@@ -125,8 +129,6 @@ def send_teams_message(token, target_id, message_body):
         ]
     }
     
-    # Note: For bots to start chats, the bot identity is inherited from the App Token.
-    # If this fails with 403 Forbidden, the user MUST have the app installed via Setup Policy.
     chat_res = requests.post(f"{GRAPH_URL}/chats", headers=headers, json=chat_payload)
     
     if chat_res.status_code in [200, 201]:
@@ -137,6 +139,22 @@ def send_teams_message(token, target_id, message_body):
     
     print(f"   [ERROR] Teams API Error: {chat_res.status_code} - {chat_res.text}")
     return False
+
+def get_compliance_reasons(token, device_id):
+    """Fetches the specific reasons (policies) why a device is non-compliant."""
+    headers = {'Authorization': f'Bearer {token}'}
+    endpoint = f"{GRAPH_URL}/deviceManagement/managedDevices('{device_id}')/deviceCompliancePolicyStates"
+    
+    try:
+        response = requests.get(endpoint, headers=headers)
+        if response.status_code == 200:
+            policies = response.json().get("value", [])
+            failed_policies = [p.get('displayName') for p in policies if p.get('state') == 'nonCompliant']
+            if failed_policies:
+                return ", ".join(failed_policies)
+    except Exception:
+        pass
+    return "Políticas de seguridad pendientes"
 
 def main():
     try:
@@ -158,10 +176,10 @@ def main():
         
         processed_count = 0
         for device in devices:
+            device_id = device.get('id')
             device_name = device.get('deviceName', 'Unknown')
             raw_upn = (device.get('userPrincipalName') or "").lower()
             
-            # Filter: Only process if the user is in our Master Group (or if no group is specified)
             if TEST_GROUP_ID and (not raw_upn or raw_upn not in test_upns):
                 continue
 
@@ -170,13 +188,21 @@ def main():
             user_id = user_info.get('id') if user_info else None
             user_name = user_info.get('displayName', 'Usuario')
             
+            compliance_reason = get_compliance_reasons(token, device_id)
+            
             print(f"Procesando: {device_name} (Dueño: {user_name})")
+            print(f"   Razón detectada: {compliance_reason}")
 
-            trigger_remote_sync(token, device.get('id'), device_name)
+            trigger_remote_sync(token, device_id, device_name)
             
             if user_id:
                 print(f"   [TEAMS] Enviando mensaje a {user_name}...")
-                msg = f"Hola <b>{user_name}</b>!<br><br>Tu dispositivo <b>{device_name}</b> no cumple con las políticas de seguridad corporativas.<br>Hemos activado un <b>Sincronismo Remoto</b>. Por favor, abre la app <b>Portal de Empresa</b> para regularizar tu estado."
+                
+                msg = (
+                    f"🛡️ <b>Aviso de Ciberseguridad</b><br><br>"
+                    f"Hola <b>{user_name}</b>, tu equipo <b>{device_name}</b> no cumple con las políticas de seguridad por: <b>{compliance_reason}</b>.<br><br>"
+                    f"Hemos lanzado un sincronismo remoto. Por favor, mantén tu equipo conectado a internet para aplicar las correcciones automáticas."
+                )
                 
                 if send_teams_message(token, user_id, msg):
                     print("   ¡Mensaje enviado con éxito!")
